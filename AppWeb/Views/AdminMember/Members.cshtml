@@ -1,36 +1,456 @@
 ﻿@model List<MemberDto>
 @{
-    ViewData["Title"] = "Members";
+    ViewData["Title"] = "Şifre Kasam";
     Layout = "~/Views/AdminUserLayout/_AdminUserLayout.cshtml";
-    int count = 0;
 }
+
+<div class="container-fluid">
+    @if (TempData["Info"] != null)
+    {
+        <div class="row">
+            <div class="col-12">
+                <div class="alert alert-info alert-dismissible fade show" role="alert">
+                    @TempData["Info"]
+                    <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    }
+
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h4 class="card-title">Şifre Listem</h4>
+                        <button type="button" id="btnAddNew" class="btn btn-outline-info">Yeni Şifre Ekle</button>
+                    </div>
+                    
+                    <div class="table-responsive">
+                        <table class="table table-bordered">
+                            <thead>
+                                <tr>
+                                    <th>#</th>
+                                    <th>Web Site İsmi</th>
+                                    <th>Şifre</th>
+                                    <th>Kullanıcı Adı</th>
+                                    <th>İşlemler</th>
+                                </tr>
+                            </thead>
+                            <tbody id="memberTableBody">
+                                
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<div class="modal fade" id="addModal" tabindex="-1" role="dialog" aria-labelledby="addModalLabel" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="addModalLabel">Yeni Şifre Ekle</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form id="addForm">
+                    <div class="form-group">
+                        <label for="WebName">Site İsmi</label>
+                        <input type="text" class="form-control" id="WebName" name="WebName" required />
+                        <span class="text-danger field-validation-error" id="webNameError"></span>
+                    </div>
+                    <div class="form-group">
+                        <label for="Username">Kullanıcı Adı</label>
+                        <input type="text" class="form-control" id="Username" name="Username" required />
+                        <span class="text-danger field-validation-error" id="usernameError"></span>
+                    </div>
+                    <div class="form-group">
+                        <label for="Password">Şifre</label>
+                        <input type="text" class="form-control" id="Password" name="Password" required />
+                        <span class="text-danger field-validation-error" id="passwordError"></span>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">İptal</button>
+                <button type="button" class="btn btn-primary" id="btnSave">Kaydet</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Üye Güncelleme Modal -->
+<div class="modal fade" id="updateModal" tabindex="-1" role="dialog" aria-labelledby="updateModalLabel" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="updateModalLabel">Şifre Güncelle</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form id="updateForm">
+                    <input type="hidden" id="updateId" name="Id" />
+                    <div class="form-group">
+                        <label for="updateWebName">Site İsmi</label>
+                        <input type="text" class="form-control" id="updateWebName" name="WebName" required />
+                        <span class="text-danger field-validation-error" id="updateWebNameError"></span>
+                    </div>
+                    <div class="form-group">
+                        <label for="updateUsername">Kullanıcı Adı</label>
+                        <input type="text" class="form-control" id="updateUsername" name="Username" required />
+                        <span class="text-danger field-validation-error" id="updateUsernameError"></span>
+                    </div>
+                    <div class="form-group">
+                        <label for="updatePassword">Şifre</label>
+                        <input type="text" class="form-control" id="updatePassword" name="Password" required />
+                        <span class="text-danger field-validation-error" id="updatePasswordError"></span>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">İptal</button>
+                <button type="button" class="btn btn-primary" id="btnUpdate">Güncelle</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Silme Onayı Modal -->
+<div class="modal fade" id="deleteModal" tabindex="-1" role="dialog" aria-labelledby="deleteModalLabel" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="deleteModalLabel">Silme Onayı</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <p>Bu şifreyi silmek istediğinizden emin misiniz?</p>
+                <input type="hidden" id="deleteId" />
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">İptal</button>
+                <button type="button" class="btn btn-danger" id="btnDelete">Sil</button>
+            </div>
+        </div>
+    </div>
+</div>
 
 @Html.AntiForgeryToken()  
 
-<table class="table table-bordered">
-    <tr>
-        <th>#</th>
-        <th>Web Site İsmi</th>
-        <th>Şifre</th>
-        <th>Kullanıcı Adı</th>
-
-        <th>İşlemler</th>
-    </tr>
-    @foreach (var item in Model)
-    {
-        count++;
-        <tr id="row_@item.Id">
-            <th>@count</th>
-            <td>@item.WebName</td>
-            <td>@item.Password</td>
-            <td>@item.Username</td>
-            <td>
-                <a asp-action="DeleteMemberAdmin" asp-controller="AdminMember" asp-route-id="@item.Id" class="btn mb-1 btn-rounded btn-outline-danger">Sil</a>
-                <a href="/AdminMember/UpdateMemberAdmin/@item.Id" class="btn mb-1 btn-rounded btn-outline-success">Güncelle</a>
-            </td>
-        </tr>
-     
-    }
-</table>
-<a href="/AdminMember/CreateMemberAdmin/" class="btn mb-1 btn-rounded btn-outline-info">Yeni Kullanıcı Girişi</a>
-
+@section Scripts {
+    <script>
+        $(document).ready(function () {
+            
+            loadMembers();
+            
+            
+            var token = $('input[name="__RequestVerificationToken"]').val();
+            
+            
+            $("#btnAddNew").click(function () {
+                
+                $("#addForm")[0].reset();
+                $(".field-validation-error").text("");
+                $("#addModal").modal("show");
+            });
+            
+            
+            $("#btnSave").click(function () {
+                
+                var memberData = {
+                    WebName: $("#WebName").val(),
+                    Username: $("#Username").val(),
+                    Password: $("#Password").val()
+                };
+                
+                
+                if (!validateForm(memberData, "add")) {
+                    return;
+                }
+                
+                
+                $.ajax({
+                    url: "/AdminMember/CreateMemberJson",
+                    type: "POST",
+                    data: JSON.stringify(memberData),
+                    contentType: "application/json",
+                    headers: {
+                        "RequestVerificationToken": token
+                    },
+                    success: function (response) {
+                        if (response.success) {
+                            $("#addModal").modal("hide");
+                            Swal.fire({
+                                title: "Başarılı!",
+                                text: response.message,
+                                icon: "success",
+                                confirmButtonText: "Tamam"
+                            });
+                            loadMembers();
+                        } else {
+                            showValidationErrors(response.errors);
+                        }
+                    },
+                    error: function (xhr) {
+                        Swal.fire({
+                            title: "Hata!",
+                            text: "Şifre eklenirken bir hata oluştu.",
+                            icon: "error",
+                            confirmButtonText: "Tamam"
+                        });
+                    }
+                });
+            });
+            
+          
+            $(document).on("click", ".btn-edit", function () {
+                var id = $(this).data("id");
+                
+               
+                $.ajax({
+                    url: "/AdminMember/GetMemberJson?id=" + id,
+                    type: "GET",
+                    success: function (response) {
+                        if (response.success) {
+                            var member = response.data;
+                            $("#updateId").val(member.id);
+                            $("#updateWebName").val(member.webName);
+                            $("#updateUsername").val(member.username);
+                            $("#updatePassword").val(member.password);
+                            $(".field-validation-error").text("");
+                            $("#updateModal").modal("show");
+                        } else {
+                            Swal.fire({
+                                title: "Hata!",
+                                text: response.message,
+                                icon: "error",
+                                confirmButtonText: "Tamam"
+                            });
+                        }
+                    },
+                    error: function () {
+                        Swal.fire({
+                            title: "Hata!",
+                            text: "Şifre bilgileri alınırken bir hata oluştu.",
+                            icon: "error",
+                            confirmButtonText: "Tamam"
+                        });
+                    }
+                });
+            });
+            
+          
+            $("#btnUpdate").click(function () {
+                
+                var memberData = {
+                    Id: $("#updateId").val(),
+                    WebName: $("#updateWebName").val(),
+                    Username: $("#updateUsername").val(),
+                    Password: $("#updatePassword").val()
+                };
+                
+              
+                if (!validateForm(memberData, "update")) {
+                    return;
+                }
+                
+               
+                $.ajax({
+                    url: "/AdminMember/UpdateMemberJson",
+                    type: "POST",
+                    data: JSON.stringify(memberData),
+                    contentType: "application/json",
+                    headers: {
+                        "RequestVerificationToken": token
+                    },
+                    success: function (response) {
+                        if (response.success) {
+                            $("#updateModal").modal("hide");
+                            Swal.fire({
+                                title: "Başarılı!",
+                                text: response.message,
+                                icon: "success",
+                                confirmButtonText: "Tamam"
+                            });
+                            loadMembers();
+                        } else {
+                            showValidationErrors(response.errors, "update");
+                        }
+                    },
+                    error: function (xhr) {
+                        Swal.fire({
+                            title: "Hata!",
+                            text: "Şifre güncellenirken bir hata oluştu.",
+                            icon: "error",
+                            confirmButtonText: "Tamam"
+                        });
+                    }
+                });
+            });
+            
+           
+            $(document).on("click", ".btn-delete", function () {
+                var id = $(this).data("id");
+                $("#deleteId").val(id);
+                $("#deleteModal").modal("show");
+            });
+            
+            
+            $("#btnDelete").click(function () {
+                var id = $("#deleteId").val();
+                
+                
+                $.ajax({
+                    url: "/AdminMember/DeleteMemberJson",
+                    type: "POST",
+                    data: { id: id },
+                    headers: {
+                        "RequestVerificationToken": token
+                    },
+                    success: function (response) {
+                        if (response.success) {
+                            $("#deleteModal").modal("hide");
+                            Swal.fire({
+                                title: "Başarılı!",
+                                text: response.message,
+                                icon: "success",
+                                confirmButtonText: "Tamam"
+                            });
+                            loadMembers();
+                        } else {
+                            Swal.fire({
+                                title: "Hata!",
+                                text: response.message,
+                                icon: "error",
+                                confirmButtonText: "Tamam"
+                            });
+                        }
+                    },
+                    error: function () {
+                        Swal.fire({
+                            title: "Hata!",
+                            text: "Şifre silinirken bir hata oluştu.",
+                            icon: "error",
+                            confirmButtonText: "Tamam"
+                        });
+                    }
+                });
+            });
+            
+            
+            function loadMembers() {
+                $.ajax({
+                    url: "/AdminMember/GetAllMembersJson",
+                    type: "GET",
+                    success: function (response) {
+                        if (response.success) {
+                            renderTable(response.data);
+                        } else {
+                            Swal.fire({
+                                title: "Hata!",
+                                text: response.message,
+                                icon: "error",
+                                confirmButtonText: "Tamam"
+                            });
+                        }
+                    },
+                    error: function () {
+                        Swal.fire({
+                            title: "Hata!",
+                            text: "Şifreler yüklenirken bir hata oluştu.",
+                            icon: "error",
+                            confirmButtonText: "Tamam"
+                        });
+                    }
+                });
+            }
+            
+            // Tabloyu doldurma fonksiyonu
+            function renderTable(members) {
+                var tableBody = $("#memberTableBody");
+                tableBody.empty();
+                
+                if (members && members.length > 0) {
+                    $.each(members, function (index, item) {
+                        var row = '<tr id="row_' + item.id + '">';
+                        row += '<td>' + (index + 1) + '</td>';
+                        row += '<td>' + item.webName + '</td>';
+                        row += '<td>' + item.password + '</td>';
+                        row += '<td>' + item.username + '</td>';
+                        row += '<td>';
+                        row += '<button class="btn mb-1 btn-rounded btn-outline-danger btn-delete" data-id="' + item.id + '">Sil</button> ';
+                        row += '<button class="btn mb-1 btn-rounded btn-outline-success btn-edit" data-id="' + item.id + '">Güncelle</button>';
+                        row += '</td>';
+                        row += '</tr>';
+                        tableBody.append(row);
+                    });
+                } else {
+                    tableBody.append('<tr><td colspan="5" class="text-center">Kayıtlı şifre bulunamadı.</td></tr>');
+                }
+            }
+            
+            // Form doğrulama fonksiyonu
+            function validateForm(data, formType) {
+                var isValid = true;
+                var prefix = formType === "update" ? "update" : "";
+                
+                // WebName alanı
+                if (!data.WebName || data.WebName.trim() === "") {
+                    $("#" + prefix + "WebNameError").text("Site ismi boş bırakılamaz");
+                    isValid = false;
+                } else {
+                    $("#" + prefix + "WebNameError").text("");
+                }
+                
+                // Username alanı
+                if (!data.Username || data.Username.trim() === "") {
+                    $("#" + prefix + "UsernameError").text("Kullanıcı adı boş bırakılamaz");
+                    isValid = false;
+                } else {
+                    $("#" + prefix + "UsernameError").text("");
+                }
+                
+                // Password alanı
+                if (!data.Password || data.Password.trim() === "") {
+                    $("#" + prefix + "PasswordError").text("Şifre boş bırakılamaz");
+                    isValid = false;
+                } else {
+                    $("#" + prefix + "PasswordError").text("");
+                }
+                
+                return isValid;
+            }
+            
+            // Validation hatalarını gösterme
+            function showValidationErrors(errors, formType) {
+                var prefix = formType === "update" ? "update" : "";
+                
+                if (errors) {
+                    if (errors.WebName) {
+                        $("#" + prefix + "WebNameError").text(errors.WebName[0]);
+                    }
+                    
+                    if (errors.Username) {
+                        $("#" + prefix + "UsernameError").text(errors.Username[0]);
+                    }
+                    
+                    if (errors.Password) {
+                        $("#" + prefix + "PasswordError").text(errors.Password[0]);
+                    }
+                }
+            }
+        });
+    </script>
+}

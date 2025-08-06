@@ -1,7 +1,9 @@
-﻿@{
-    ViewData["Title"] = "Index";
+﻿@model List<MemberDto>
+@{
+    ViewData["Title"] = "Ana Sayfa";
     Layout = "~/Views/AdminUserLayout/_AdminUserLayout.cshtml";
 }
+
 <style>
     .welcome-container {
         display: flex;
@@ -22,9 +24,33 @@
         font-weight: bold;
         color: #333;
     }
+    
+    .welcome-description {
+        font-size: 18px;
+        color: #666;
+        margin-top: 20px;
+        max-width: 600px;
+    }
+    
+    .action-buttons {
+        margin-top: 40px;
+    }
+    
+    .action-buttons .btn {
+        margin: 0 10px;
+        padding: 10px 25px;
+        font-size: 16px;
+    }
 </style>
 
 <div class="welcome-container">
     <img src="~/images/authtake-logo.png" alt="Authtake Logo" class="welcome-logo" />
     <h3 class="welcome-text">Authtake Şifre Kasası Uygulamasına Hoşgeldiniz</h3>
+    <p class="welcome-description">
+        Tüm şifrelerinizi güvenle saklayın, yönetin ve istediğiniz zaman erişin.
+        Şifrelerinizi görüntülemek veya düzenlemek için Şifre Kasam sayfasını ziyaret edin.
+    </p>
+    <div class="action-buttons">
+        <a href="/AdminMember/Members" class="btn btn-primary">Şifrelerime Git</a>
+    </div>
 </div>

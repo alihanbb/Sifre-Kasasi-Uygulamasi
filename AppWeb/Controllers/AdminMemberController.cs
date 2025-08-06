@@ -7,73 +7,120 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace AppWeb.Controllers
 {
-    [Authorize]
+    [Authorize(Roles ="manager,member")]
     public class AdminMemberController : Controller
     {
         private readonly IMemberService memberService;
         private readonly UserManager<AppUser> userManager;
+        
         public AdminMemberController(IMemberService memberService, UserManager<AppUser> userManager)
         {
             this.memberService = memberService;
             this.userManager = userManager;
         }
+
+        [HttpGet]
         public IActionResult Index()
         {
             return View();
         }
 
         [HttpGet]
-        public async Task<IActionResult> Members()
-        {
-            var user = await userManager.GetUserAsync(User);
-            var members = await memberService.GetAllAsync(user.Id);
-            return View(members);
-        }
-
-        [HttpGet]
-        public IActionResult CreateMemberAdmin()
+        public IActionResult Members()
         {
             return View();
         }
 
-        [HttpPost]
-        public async Task<IActionResult> CreateMemberAdmin(CreateMemberDto createUser)
-        {
-            var user = await userManager.GetUserAsync(User);
-            await memberService.CreateAsync(createUser, user.Id);
-            return RedirectToAction("Members");
-        }
-
         [HttpGet]
-        public async Task<IActionResult> UpdateMemberAdmin(int id)
+        public async Task<JsonResult> GetAllMembersJson()
         {
-            var user = await userManager.GetUserAsync(User);
-            var member = await memberService.GetByIdAsync(id, user.Id);
-            if (member == null)
-            {
-                return NotFound();
-            }
-            return View(member);
-        }
-
-        [HttpPost]
-        public async Task<IActionResult> UpdateMemberAdmin(UpdateMemberDto updateUser)
-        {
-            if (ModelState.IsValid)
+            try
             {
                 var user = await userManager.GetUserAsync(User);
-                await memberService.UpdatesAsync(updateUser,user.Id);
-                return RedirectToAction(nameof(Members));          
+                var members = await memberService.GetAllAsync(user.Id);
+                return Json(new { success = true, data = members });
             }
-            return View(updateUser);
+            catch (Exception ex)
+            {
+                return Json(new { success = false, message = ex.Message });
+            }
         }
 
         [HttpGet]
-        public async Task<IActionResult> DeleteMemberAdmin(int id)
+        public async Task<JsonResult> GetMemberJson(int id)
         {
-            var user = await userManager.GetUserAsync(User);
-            await memberService.DeleteAsync(id, user.Id);
-            return RedirectToAction(nameof(Members));
+            try
+            {
+                var user = await userManager.GetUserAsync(User);
+                var member = await memberService.GetByIdAsync(id, user.Id);
+                
+                if (member == null)
+                    return Json(new { success = false, message = "Kayıt bulunamadı" });
+                
+                return Json(new { success = true, data = member });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false, message = ex.Message });
+            }
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<JsonResult> CreateMemberJson([FromBody] CreateMemberDto createUser)
+        {
+            if (!ModelState.IsValid)
+            {
+                return Json(new { success = false, errors = ModelState });
+            }
+
+            try
+            {
+                var user = await userManager.GetUserAsync(User);
+                await memberService.CreateAsync(createUser, user.Id);
+                return Json(new { success = true, message = "Kullanıcı bilgileri başarıyla eklendi" });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false, message = ex.Message });
+            }
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<JsonResult> UpdateMemberJson([FromBody] UpdateMemberDto updateUser)
+        {
+            if (!ModelState.IsValid)
+            {
+                return Json(new { success = false, errors = ModelState });
+            }
+
+            try
+            {
+                var user = await userManager.GetUserAsync(User);
+                await memberService.UpdatesAsync(updateUser, user.Id);
+                return Json(new { success = true, message = "Kullanıcı bilgileri başarıyla güncellendi" });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false, message = ex.Message });
+            }
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<JsonResult> DeleteMemberJson(int id)
+        {
+            try
+            {
+                var user = await userManager.GetUserAsync(User);
+                await memberService.DeleteAsync(id, user.Id);
+                return Json(new { success = true, message = "Kullanıcı bilgileri başarıyla silindi" });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false, message = ex.Message });
+            }
         }
     }
 }

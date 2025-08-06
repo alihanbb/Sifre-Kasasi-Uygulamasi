@@ -1,34 +1,249 @@
-﻿@model List<RoleViewModel>
-@{
-    ViewData["Title"] = "Index";
+﻿@{
+    ViewData["Title"] = "Kullanıcı Yönetimi";
     Layout = "~/Views/AdminUserLayout/_AdminUserLayout.cshtml";
-    int count = 0;
 }
 
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h4 class="card-title">Kullanıcı Yönetimi</h4>
+            </div>
+            <div class="card-body">
+                <table class="table table-bordered">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Kullanıcı ID</th>
+                            <th>Kullanıcı Adı</th>
+                            <th>Email</th>
+                            <th>Rol</th>
+                            <th>İşlemler</th>
+                        </tr>
+                    </thead>
+                    <tbody id="roleUserTable">
+                        <!-- Veriler AJAX ile yüklenecek -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
 
-<table class="table table-bordered">
-    <tr>
-        <th>#</th>
-        <th>Kullanıcı Adı</th>
-        <th>Email</th>
-		<th>Rol</th>
-        <th>İşlemler</th>
-    </tr>
-    @foreach (var item in Model)
-    {
-        count++;
-        <tr>
-            <th>@count</th>
-            <td>@item.User.UserName</td>
-            <td>@item.User.Email</td>
-            <td>@string.Join(", ", item.Roles)</td>
-            <td>
+<!-- Rol Güncelleme Modal -->
+<div class="modal fade" id="updateRoleModal" tabindex="-1" role="dialog" aria-labelledby="updateRoleModalLabel" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="updateRoleModalLabel">Rol Güncelle</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form id="updateRoleForm">
+                    <input type="hidden" id="selectedUserId" />
+                    <div class="form-group">
+                        <label for="selectedUserName">Kullanıcı:</label>
+                        <input type="text" class="form-control" id="selectedUserName" readonly />
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Kullanılabilir Roller:</label>
+                        <div class="mt-3" id="rolesContainer">
+                            <!-- Roller dinamik olarak yüklenecek -->
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">İptal</button>
+                <button type="button" class="btn btn-primary" id="btnUpdateRole">Rolleri Güncelle</button>
+            </div>
+        </div>
+    </div>
+</div>
 
-                <a href="/AdminManager/UpdateRole/@item.User.Id" class="btn mb-1 btn-rounded btn-outline-success">Rol Güncelle</a>
-            </td>
-        </tr>
+@Html.AntiForgeryToken()
 
-    }
-</table>
+@section Scripts {
+    <script>
+        $(document).ready(function () {
+            loadUsers();
+            
+            // CSRF token'ı al
+            var token = $('input[name="__RequestVerificationToken"]').val();
+        });
 
+        // Kullanıcıları yükle
+        function loadUsers() {
+            $.ajax({
+                url: '@Url.Action("GetUsers", "AdminManager")',
+                type: 'GET',
+                success: function (response) {
+                    if (response.success) {
+                        var tableBody = $('#roleUserTable');
+                        tableBody.empty();
+                        
+                        if (response.data && response.data.length > 0) {
+                            $.each(response.data, function (index, item) {
+                                var roles = item.roles.join(", ");
+                                var row = `<tr>
+                                    <td>${index + 1}</td>
+                                    <td>${item.user.id}</td>
+                                    <td>${item.user.userName}</td>
+                                    <td>${item.user.email}</td>
+                                    <td>${roles}</td>
+                                    <td>
+                                        <button onclick="showUpdateRoleForm(${item.user.id}, '${item.user.userName}')" 
+                                                class="btn mb-1 btn-rounded btn-outline-success">
+                                            Rol Güncelle
+                                        </button>
+                                    </td>
+                                </tr>`;
+                                tableBody.append(row);
+                            });
+                        } else {
+                            tableBody.append('<tr><td colspan="6" class="text-center">Kullanıcı bulunamadı.</td></tr>');
+                        }
+                    } else {
+                        Swal.fire({
+                            title: "Hata!",
+                            text: "Kullanıcı verileri yüklenirken bir hata oluştu: " + response.message,
+                            icon: "error",
+                            confirmButtonText: "Tamam"
+                        });
+                    }
+                },
+                error: function (xhr, status, error) {
+                    Swal.fire({
+                        title: "Hata!",
+                        text: "Kullanıcı verileri yüklenirken bir hata oluştu.",
+                        icon: "error",
+                        confirmButtonText: "Tamam"
+                    });
+                }
+            });
+        }
+           
+        // Rol güncelleme formunu göster
+        function showUpdateRoleForm(userId, userName) {
+            $('#selectedUserId').val(userId);
+            $('#selectedUserName').val(userName);
+
+            // Kullanıcının mevcut rollerini yükle
+            $.ajax({
+                url: '@Url.Action("UpdateRole", "AdminManager")',
+                type: 'GET',
+                data: { userId: userId },
+                success: function (roles) {
+                    var rolesContainer = $('#rolesContainer');
+                    rolesContainer.empty();
+
+                    if (roles && roles.length > 0) {
+                        $.each(roles, function (index, role) {
+                            var roleHtml = `
+                                <div class="form-check mb-2">
+                                    <input class="form-check-input role-checkbox"
+                                           type="checkbox"
+                                           data-role-id="${role.roleId}"
+                                           data-role-name="${role.roleName}"
+                                           ${role.isSelected ? 'checked' : ''}
+                                           id="role_${index}" />
+                                    <label class="form-check-label" for="role_${index}">
+                                        ${role.roleName}
+                                    </label>
+                                </div>`;
+                            rolesContainer.append(roleHtml);
+                        });
+                    } else {
+                        rolesContainer.append('<p>Rol bulunamadı.</p>');
+                    }
+
+                    $('#updateRoleModal').modal('show');
+                },
+                error: function (xhr, status, error) {
+                    Swal.fire({
+                        title: "Hata!",
+                        text: "Roller yüklenirken bir hata oluştu.",
+                        icon: "error",
+                        confirmButtonText: "Tamam"
+                    });
+                }
+            });
+        }
+
+        // Rol güncelleme işlemi
+        $('#btnUpdateRole').on('click', function () {
+            var userId = $('#selectedUserId').val();
+            var selectedRoles = [];
+
+            $('.role-checkbox').each(function () {
+                selectedRoles.push({
+                    RoleId: $(this).data('role-id'),
+                    RoleName: $(this).data('role-name'),
+                    IsSelected: $(this).is(':checked')
+                });
+            });
+
+            var token = $('input[name="__RequestVerificationToken"]').val();
+
+            $.ajax({
+                url: '@Url.Action("UpdateRole", "AdminManager")',
+                type: 'POST',
+                data: {
+                    userId: userId,
+                    roles: selectedRoles,
+                    __RequestVerificationToken: token
+                },
+                success: function (response) {
+                    if (response.success) {
+                        $('#updateRoleModal').modal('hide');
+                        Swal.fire({
+                            title: "Başarılı!",
+                            text: response.message,
+                            icon: "success",
+                            confirmButtonText: "Tamam"
+                        });
+                        // Kullanıcı tablosunu yeniden yükle
+                        loadUsers();
+                    } else {
+                        Swal.fire({
+                            title: "Hata!",
+                            text: response.message,
+                            icon: "error",
+                            confirmButtonText: "Tamam"
+                        });
+                    }
+                },
+                error: function (xhr, status, error) {
+                    var errorMessage = "Roller güncellenirken bir hata oluştu.";
+                    
+                    if (xhr.responseText) {
+                        try {
+                            var errorResponse = JSON.parse(xhr.responseText);
+                            if (errorResponse.message) {
+                                errorMessage = errorResponse.message;
+                            }
+                        } catch (e) {
+                            console.error("Error parsing response:", e);
+                        }
+                    }
+                    
+                    Swal.fire({
+                        title: "Hata!",
+                        text: errorMessage,
+                        icon: "error",
+                        confirmButtonText: "Tamam"
+                    });
+                }
+            });
+        });
+
+        // Modal kapandığında formu temizle
+        $('#updateRoleModal').on('hidden.bs.modal', function () {
+            $('#updateRoleForm')[0].reset();
+            $('#rolesContainer').empty();
+        });
+    </script>
+}
 

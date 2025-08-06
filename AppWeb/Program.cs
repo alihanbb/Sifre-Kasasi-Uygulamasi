@@ -19,7 +19,9 @@ builder.Services.AddScoped<IRegisterService , RegisterService>();
 builder.Services.AddScoped<ILoginService, LoginService>();
 builder.Services.AddScoped<IMemberService, MemberService>();
 builder.Services.AddScoped<IEncrypthonService, EncrypthonService>();
+
 var app = builder.Build();
+
 
 if (!app.Environment.IsDevelopment())
 {
