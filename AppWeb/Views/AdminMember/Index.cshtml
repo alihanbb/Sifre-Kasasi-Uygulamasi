@@ -1,0 +1,30 @@
+﻿@{
+    ViewData["Title"] = "Index";
+    Layout = "~/Views/AdminUserLayout/_AdminUserLayout.cshtml";
+}
+<style>
+    .welcome-container {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        height: 80vh;
+        text-align: center;
+    }
+
+    .welcome-logo {
+        max-width: 300px;
+        margin-bottom: 40px;
+    }
+
+    .welcome-text {
+        font-size: 32px;
+        font-weight: bold;
+        color: #333;
+    }
+</style>
+
+<div class="welcome-container">
+    <img src="~/images/authtake-logo.png" alt="Authtake Logo" class="welcome-logo" />
+    <h3 class="welcome-text">Authtake Şifre Kasası Uygulamasına Hoşgeldiniz</h3>
+</div>

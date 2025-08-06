@@ -1,0 +1,36 @@
+﻿@model List<MemberDto>
+@{
+    ViewData["Title"] = "Members";
+    Layout = "~/Views/AdminUserLayout/_AdminUserLayout.cshtml";
+    int count = 0;
+}
+
+@Html.AntiForgeryToken()  
+
+<table class="table table-bordered">
+    <tr>
+        <th>#</th>
+        <th>Web Site İsmi</th>
+        <th>Şifre</th>
+        <th>Kullanıcı Adı</th>
+
+        <th>İşlemler</th>
+    </tr>
+    @foreach (var item in Model)
+    {
+        count++;
+        <tr id="row_@item.Id">
+            <th>@count</th>
+            <td>@item.WebName</td>
+            <td>@item.Password</td>
+            <td>@item.Username</td>
+            <td>
+                <a asp-action="DeleteMemberAdmin" asp-controller="AdminMember" asp-route-id="@item.Id" class="btn mb-1 btn-rounded btn-outline-danger">Sil</a>
+                <a href="/AdminMember/UpdateMemberAdmin/@item.Id" class="btn mb-1 btn-rounded btn-outline-success">Güncelle</a>
+            </td>
+        </tr>
+     
+    }
+</table>
+<a href="/AdminMember/CreateMemberAdmin/" class="btn mb-1 btn-rounded btn-outline-info">Yeni Kullanıcı Girişi</a>
+
