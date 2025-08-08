@@ -7,7 +7,7 @@ namespace AppServices.Concrete
     public class EncrypthonService : IEncrypthonService
     {
         private static readonly string Key = "acf5&3vdk49v*dgo";
-        private static readonly string IV = "1a3d5f7g9h2j4l6n";
+        private static readonly string IV = "1a3d5f7g9h2j4l6n";//Initializing Vector (IV)
 
         public  string AesEncrypthon(string text)
         {

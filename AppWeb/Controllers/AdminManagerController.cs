@@ -19,19 +19,15 @@ namespace AppWeb.Controllers
             this.roleManager = roleManager;
         }
 
-        // Normal View döndüren Index
         [HttpGet]
         public IActionResult Index()
         {
             return View();
         }
 
-        // AJAX için kullanıcıları getiren metod
         [HttpGet]
         public async Task<JsonResult> GetUsers()
         {
-            try
-            {
                 var users = await userManager.Users.ToListAsync();
                 var userViewModels = new List<RoleViewModel>();
 
@@ -45,19 +41,12 @@ namespace AppWeb.Controllers
                     });
                 }
 
-                return Json(new { success = true, data = userViewModels });
-            }
-            catch (Exception ex)
-            {
-                return Json(new { success = false, message = ex.Message });
-            }
+                return Json(new { success = true, data = userViewModels });    
         }
 
         [HttpGet]
         public async Task<JsonResult> UpdateRole(int userId)
         {
-            try
-            {
                 var user = await userManager.FindByIdAsync(userId.ToString());
                 
                 if (user == null)
@@ -81,24 +70,12 @@ namespace AppWeb.Controllers
                     roleViews.Add(model);
                 }
                 return Json(roleViews);
-            }
-            catch (Exception ex)
-            {
-                return Json(new { success = false, message = ex.Message });
-            }
         }
 
+       
         [HttpPost]
-        [ValidateAntiForgeryToken]
         public async Task<JsonResult> UpdateRole(int userId, List<RoleViewModel> roles)
         {
-            try
-            {
-                if (userId == 0)
-                {
-                    return Json(new { success = false, message = "Geçersiz kullanıcı ID'si." });
-                }
-
                 var user = await userManager.FindByIdAsync(userId.ToString());
                 
                 if (user == null)
@@ -107,32 +84,23 @@ namespace AppWeb.Controllers
                 }
              
                 var currentRoles = await userManager.GetRolesAsync(user);
-                var selectedRoles = roles?.Where(r => r.IsSelected && !string.IsNullOrEmpty(r.RoleName))
-                                         .Select(r => r.RoleName).ToList() ?? new List<string>();
-
-                // Mevcut rolleri kaldır
+                var selectedRoles = roles.Where(r => r.IsSelected && !string.IsNullOrEmpty(r.RoleName))
+                                       .Select(r => r.RoleName).ToList();
                 if (currentRoles.Any())
                 {
                     await userManager.RemoveFromRolesAsync(user, currentRoles);
                 }
-
-                // Yeni rolleri ekle
                 if (selectedRoles.Any())
                 {
                     await userManager.AddToRolesAsync(user, selectedRoles);
                 }
                 else
                 {
-                    // Hiç rol seçilmemişse default member rolü ver
                     await userManager.AddToRoleAsync(user, "member");
                 }
 
                 return Json(new { success = true, message = "Kullanıcı rolleri başarıyla güncellendi." });
-            }
-            catch (Exception ex)
-            {
-                return Json(new { success = false, message = ex.Message });
-            }
+         
         } 
     }
 }
