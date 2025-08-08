@@ -1,5 +1,5 @@
 Şifre Kasası Projesi
-Bu proje, kullanıcıların web sitelerine ait şifrelerini güvenli bir şekilde saklayıp yönetebileceği bir şifre kasası uygulamasıdır. Yönetici paneli üzerinden kullanıcı rolleri ve yetkileri dinamik olarak güncellenebilir.
+Bu proje, kullanıcıların web sitelerine ait  şifre ve kullanıcı bilgilerini güvenli bir şekilde saklayıp yönetebileceği bir şifre kasası uygulamasıdır.Kullnıcı şifreleri geri döndürülebilir bir yapıda veri tabanında AES128 standardında şifrelenerek saklanır. Yönetici paneli üzerinden kullanıcı rolleri ve yetkileri dinamik olarak güncellenebilir. Kullanıcı rolleri seviyesinde ilgili içerik ve ekranlara ulaşabilir yada sistem dışınada atılabilir. İlgili hata yada error durumları için ilgili validasyon yada error404 yönlendirme ile kullanıcı deneyimi yükseltilmiştir.
 Kullanılan Teknolojiler
 •	.NET 9: Modern ve hızlı web uygulamaları geliştirmek için.
 •	ASP.NET Core Razor Pages: Sayfa tabanlı, hızlı ve kolay yönetilebilir web arayüzü.
@@ -10,9 +10,11 @@ Kullanılan Teknolojiler
 •	Bootstrap 4/5: Responsive ve modern arayüz tasarımı.
 •	SweetAlert: Kullanıcı dostu bildirimler ve hata mesajları.
 Proje Yapısı
+Proje, katmanlı mimaride MVC altyapısı ile yazılmıştır. 
+İlgili katmanlar;
 •	AppWeb: Web arayüzü ve API controller'ları.
 •	AppRepository: Entity ve veri erişim katmanı.
-•	AppServices: Servis ve iş mantığı katmanı.
+•	AppServices: Servis, validasyon ve iş mantığı katmanı.
 Temel Özellikler
 •	Kullanıcılar şifrelerini ekleyebilir, güncelleyebilir ve silebilir.
 •	Yöneticiler, kullanıcı rolleri ve yetkilerini dinamik olarak güncelleyebilir.
