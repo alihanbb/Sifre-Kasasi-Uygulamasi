@@ -24,9 +24,11 @@ namespace AppServices.Concrete
 
         public async Task SignInAsync(AppUser user)
             => await signInManager.SignInAsync(user, false);
+        
         public async Task Logout()
         {
             await signInManager.SignOutAsync();
         }
+        
     }
 }

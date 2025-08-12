@@ -8,5 +8,6 @@ namespace AppServices.Abstract
         Task<AppUser?> GetUserByUsernameAsync(string username);
         Task<bool> CheckPasswordAsync(AppUser user, string password);
         Task SignInAsync(AppUser user);
+       
     }
 }

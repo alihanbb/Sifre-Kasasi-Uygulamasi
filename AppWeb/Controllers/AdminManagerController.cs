@@ -1,22 +1,26 @@
-﻿using AppRepository.Entities;
+﻿using System.Net.Http.Headers;
+using AppRepository.Entities;
+using AppRepository.Entities.Dtos;
+using AppServices.Abstract;
 using AppWeb.ViewModel;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 
 namespace AppWeb.Controllers
 {
-    [Authorize(Roles ="manager")]
+    [Authorize(Roles = "manager")]
     public class AdminManagerController : Controller
     {
-
+        private readonly IHttpClientFactory httpClientFactory;
         private readonly UserManager<AppUser> userManager;
-        private readonly RoleManager<AppRole> roleManager;
-        public AdminManagerController(UserManager<AppUser> userManager, RoleManager<AppRole> roleManager)
+        private readonly IJwtService jwtService;
+
+        public AdminManagerController(IHttpClientFactory httpClientFactory, UserManager<AppUser> userManager, IJwtService jwtService)
         {
+            this.httpClientFactory = httpClientFactory;
             this.userManager = userManager;
-            this.roleManager = roleManager;
+            this.jwtService = jwtService;
         }
 
         [HttpGet]
@@ -28,79 +32,107 @@ namespace AppWeb.Controllers
         [HttpGet]
         public async Task<JsonResult> GetUsers()
         {
-                var users = await userManager.Users.ToListAsync();
-                var userViewModels = new List<RoleViewModel>();
+            try
+            {
+                var user = await userManager.GetUserAsync(User);
+                if (user == null)
+                    return Json(new { success = false, message = "Kullanıcı bilgisi bulunamadı." });
 
-                foreach (var appUser in users)
+                var token = await jwtService.GenerateTokenAsync(user); 
+                var client = httpClientFactory.CreateClient();
+                client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+                var response = await client.GetAsync($"https://localhost:7204/api/manager/users");
+
+                if (!response.IsSuccessStatusCode)
                 {
-                    var roles = await userManager.GetRolesAsync(appUser);
-                    userViewModels.Add(new RoleViewModel
-                    {
-                        User = appUser,
-                        Roles = roles.ToList()
-                    });
+                    var errorContent = await response.Content.ReadAsStringAsync();
+                    return Json(new { success = false, message = $"API isteği başarısız oldu: {response.StatusCode}. Detay: {errorContent}" });
                 }
 
-                return Json(new { success = true, data = userViewModels });    
+                var users = await response.Content.ReadFromJsonAsync<List<UserDto>>();
+                var userViewModels = users?.Select(u => new RoleViewModel
+                {
+                    User = new AppUser 
+                    { 
+                        Id = u.Id, 
+                        UserName = u.UserName, 
+                        Email = u.Email, 
+                        FirstName = u.FirstName, 
+                        LastName = u.LastName 
+                    },
+                    Roles = u.Roles
+                }).ToList() ?? new List<RoleViewModel>();
+                
+                return Json(new { success = true, data = userViewModels });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false, message = $"Hata oluştu: {ex.Message}" });
+            }
         }
 
         [HttpGet]
         public async Task<JsonResult> UpdateRole(int userId)
         {
-                var user = await userManager.FindByIdAsync(userId.ToString());
-                
+            try
+            {
+                var user = await userManager.GetUserAsync(User);
                 if (user == null)
+                    return Json(new { success = false, message = "Kullanıcı bilgisi bulunamadı." });
+
+                var token = await jwtService.GenerateTokenAsync(user);
+                var client = httpClientFactory.CreateClient();
+                client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+                var response = await client.GetAsync($"https://localhost:7204/api/manager/user/{userId}/roles");
+                if (!response.IsSuccessStatusCode)
                 {
-                    return Json(new { success = false, message = $"Kullanıcı bulunamadı: {userId}" });
+                    var errorContent = await response.Content.ReadAsStringAsync();
+                    return Json(new { success = false, message = $"API isteği başarısız oldu: {response.StatusCode}. Detay: {errorContent}" });
                 }
-                
-                var userRoles = await userManager.GetRolesAsync(user);
-                var allRoles = await roleManager.Roles.ToListAsync();
-                
-                var roleViews = new List<RoleViewModel>();
-                foreach (var item in allRoles)
+                var roles = await response.Content.ReadFromJsonAsync<List<RoleDto>>();
+                var roleViewModels = roles?.Select(r => new RoleViewModel
                 {
-                    var model = new RoleViewModel
-                    {
-                        RoleId = item.Id,
-                        RoleName = item.Name,
-                        IsSelected = userRoles.Contains(item.Name),
-                        User = user
-                    };
-                    roleViews.Add(model);
-                }
-                return Json(roleViews);
+                    RoleId = r.Id,
+                    RoleName = r.Name,
+                    IsSelected = r.IsSelected,
+                    User = new AppUser { Id = userId }
+                }).ToList() ?? new List<RoleViewModel>();
+                return Json(roleViewModels);
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false, message = $"Hata oluştu: {ex.Message}" });
+            }
         }
 
-       
         [HttpPost]
         public async Task<JsonResult> UpdateRole(int userId, List<RoleViewModel> roles)
         {
-                var user = await userManager.FindByIdAsync(userId.ToString());
-                
+            try
+            {
+                var user = await userManager.GetUserAsync(User);
                 if (user == null)
-                {
-                    return Json(new { success = false, message = $"Kullanıcı bulunamadı: {userId}" });
-                }
-             
-                var currentRoles = await userManager.GetRolesAsync(user);
-                var selectedRoles = roles.Where(r => r.IsSelected && !string.IsNullOrEmpty(r.RoleName))
-                                       .Select(r => r.RoleName).ToList();
-                if (currentRoles.Any())
-                {
-                    await userManager.RemoveFromRolesAsync(user, currentRoles);
-                }
-                if (selectedRoles.Any())
-                {
-                    await userManager.AddToRolesAsync(user, selectedRoles);
-                }
-                else
-                {
-                    await userManager.AddToRoleAsync(user, "member");
-                }
+                    return Json(new { success = false, message = "Kullanıcı bilgisi bulunamadı." });
 
+                var token = await jwtService.GenerateTokenAsync(user);
+                var client = httpClientFactory.CreateClient();
+                client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+
+                var selectedRoles = roles?.Where(r => r.IsSelected && !string.IsNullOrEmpty(r.RoleName))
+                                         .Select(r => r.RoleName).ToList() ?? new List<string>();             
+                var response = await client.PutAsJsonAsync($"https://localhost:7204/api/manager/user/{userId}/roles", selectedRoles);
+                if (!response.IsSuccessStatusCode)
+                {
+                    var errorContent = await response.Content.ReadAsStringAsync();
+                    return Json(new { success = false, message = errorContent});
+                }
                 return Json(new { success = true, message = "Kullanıcı rolleri başarıyla güncellendi." });
-         
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Manager Web: Exception in UpdateRole (POST): {ex.Message}");
+                return Json(new { success = false, message = $"Hata oluştu: {ex.Message}" });
+            }
         } 
     }
 }

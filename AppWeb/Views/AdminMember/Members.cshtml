@@ -165,9 +165,12 @@
                 $(".field-validation-error").text("");
                 $("#addModal").modal("show");
             });
-            
-            
+                        
             $("#btnSave").click(function () {
+                console.log("Save button clicked");
+                
+                // Disable button to prevent double submission
+                $("#btnSave").prop("disabled", true).html('<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> İşleniyor...');
                 
                 var memberData = {
                     WebName: $("#WebName").val(),
@@ -175,11 +178,13 @@
                     Password: $("#Password").val()
                 };
                 
+                console.log("Form data:", memberData);
                 
                 if (!validateForm(memberData, "add")) {
+                    console.log("Form validation failed");
+                    $("#btnSave").prop("disabled", false).text("Kaydet");
                     return;
                 }
-                
                 
                 $.ajax({
                     url: "/AdminMember/CreateMemberJson",
@@ -190,6 +195,8 @@
                         "RequestVerificationToken": token
                     },
                     success: function (response) {
+                        console.log("Response from server:", response);
+                        
                         if (response.success) {
                             $("#addModal").modal("hide");
                             Swal.fire({
@@ -200,16 +207,35 @@
                             });
                             loadMembers();
                         } else {
-                            showValidationErrors(response.errors);
+                            console.error("Error response:", response);
+                            
+                            if (response.errors) {
+                                showValidationErrors(response.errors);
+                            } else if (response.message) {
+                                Swal.fire({
+                                    title: "Hata!",
+                                    text: response.message,
+                                    icon: "error",
+                                    confirmButtonText: "Tamam"
+                                });
+                            }
                         }
+                        // Re-enable button
+                        $("#btnSave").prop("disabled", false).text("Kaydet");
                     },
-                    error: function (xhr) {
+                    error: function (xhr, status, error) {
+                        console.error("Ajax error:", status, error);
+                        console.log("XHR object:", xhr);
+                        
                         Swal.fire({
                             title: "Hata!",
-                            text: "Şifre eklenirken bir hata oluştu.",
+                            text: "Şifre eklenirken bir hata oluştu: " + error,
                             icon: "error",
                             confirmButtonText: "Tamam"
                         });
+                        
+                        // Re-enable button
+                        $("#btnSave").prop("disabled", false).text("Kaydet");
                     }
                 });
             });
@@ -220,7 +246,7 @@
                 
                
                 $.ajax({
-                    url: "/AdminMember/GetMemberJson?id=" + id,
+                    url: "/AdminMember/UpdateMemberJson?id=" + id,
                     type: "GET",
                     success: function (response) {
                         if (response.success) {
@@ -253,6 +279,8 @@
             
           
             $("#btnUpdate").click(function () {
+                // Disable button to prevent double submission
+                $("#btnUpdate").prop("disabled", true).html('<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> İşleniyor...');
                 
                 var memberData = {
                     Id: $("#updateId").val(),
@@ -261,8 +289,10 @@
                     Password: $("#updatePassword").val()
                 };
                 
+                console.log("Update data:", memberData);
               
                 if (!validateForm(memberData, "update")) {
+                    $("#btnUpdate").prop("disabled", false).text("Güncelle");
                     return;
                 }
                 
@@ -276,6 +306,8 @@
                         "RequestVerificationToken": token
                     },
                     success: function (response) {
+                        console.log("Update response:", response);
+                        
                         if (response.success) {
                             $("#updateModal").modal("hide");
                             Swal.fire({
@@ -286,16 +318,32 @@
                             });
                             loadMembers();
                         } else {
-                            showValidationErrors(response.errors, "update");
+                            if (response.errors) {
+                                showValidationErrors(response.errors, "update");
+                            } else if (response.message) {
+                                Swal.fire({
+                                    title: "Hata!",
+                                    text: response.message,
+                                    icon: "error",
+                                    confirmButtonText: "Tamam"
+                                });
+                            }
                         }
+                        // Re-enable button
+                        $("#btnUpdate").prop("disabled", false).text("Güncelle");
                     },
-                    error: function (xhr) {
+                    error: function (xhr, status, error) {
+                        console.error("Ajax error:", status, error);
+                        
                         Swal.fire({
                             title: "Hata!",
-                            text: "Şifre güncellenirken bir hata oluştu.",
+                            text: "Şifre güncellenirken bir hata oluştu: " + error,
                             icon: "error",
                             confirmButtonText: "Tamam"
                         });
+                        
+                        // Re-enable button
+                        $("#btnUpdate").prop("disabled", false).text("Güncelle");
                     }
                 });
             });
@@ -311,6 +359,8 @@
             $("#btnDelete").click(function () {
                 var id = $("#deleteId").val();
                 
+                // Disable button to prevent double submission
+                $("#btnDelete").prop("disabled", true).html('<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> İşleniyor...');
                 
                 $.ajax({
                     url: "/AdminMember/DeleteMemberJson",
@@ -337,24 +387,31 @@
                                 confirmButtonText: "Tamam"
                             });
                         }
+                        // Re-enable button
+                        $("#btnDelete").prop("disabled", false).text("Sil");
                     },
-                    error: function () {
+                    error: function (xhr, status, error) {
                         Swal.fire({
                             title: "Hata!",
-                            text: "Şifre silinirken bir hata oluştu.",
+                            text: "Şifre silinirken bir hata oluştu: " + error,
                             icon: "error",
                             confirmButtonText: "Tamam"
                         });
+                        // Re-enable button
+                        $("#btnDelete").prop("disabled", false).text("Sil");
                     }
                 });
             });
             
             
             function loadMembers() {
+                console.log("Loading members...");
+                
                 $.ajax({
                     url: "/AdminMember/GetAllMembersJson",
                     type: "GET",
                     success: function (response) {
+                        console.log("Members loaded:", response);
                         if (response.success) {
                             renderTable(response.data);
                         } else {
@@ -366,10 +423,11 @@
                             });
                         }
                     },
-                    error: function () {
+                    error: function (xhr, status, error) {
+                        console.error("Error loading members:", status, error);
                         Swal.fire({
                             title: "Hata!",
-                            text: "Şifreler yüklenirken bir hata oluştu.",
+                            text: "Şifreler yüklenirken bir hata oluştu: " + error,
                             icon: "error",
                             confirmButtonText: "Tamam"
                         });

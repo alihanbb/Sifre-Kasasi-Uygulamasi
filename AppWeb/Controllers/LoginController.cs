@@ -9,7 +9,7 @@ namespace AppWeb.Controllers
         private readonly ILoginService loginService;
         public LoginController(ILoginService loginService)
         {
-                this.loginService = loginService;
+            this.loginService = loginService;
         }
 
         [HttpGet]

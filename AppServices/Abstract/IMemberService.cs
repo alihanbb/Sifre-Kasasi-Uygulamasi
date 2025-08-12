@@ -1,5 +1,4 @@
-﻿using AppRepository.Entities;
-using AppRepository.Entities.Dtos;
+﻿using AppRepository.Entities.Dtos;
 
 namespace AppServices.Abstract
 {

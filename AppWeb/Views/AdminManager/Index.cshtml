@@ -14,7 +14,6 @@
                     <thead>
                         <tr>
                             <th>#</th>
-                            <th>Kullanıcı ID</th>
                             <th>Kullanıcı Adı</th>
                             <th>Email</th>
                             <th>Rol</th>
@@ -89,7 +88,6 @@
                                 var roles = item.roles.join(", ");
                                 var row = `<tr>
                                     <td>${index + 1}</td>
-                                    <td>${item.user.id}</td>
                                     <td>${item.user.userName}</td>
                                     <td>${item.user.email}</td>
                                     <td>${roles}</td>
