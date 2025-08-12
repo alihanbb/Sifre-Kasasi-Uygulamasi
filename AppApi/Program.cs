@@ -12,18 +12,15 @@ using Scalar.AspNetCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container
 builder.Services.AddControllers();
 builder.Services.AddOpenApi();
 
-// Repository ve Service'leri ekle
 builder.Services.AddScoped<IMemberService, MemberService>();
 builder.Services.AddScoped<IEncrypthonService, EncrypthonService>();
 builder.Services.AddScoped<IUserManagementService, UserManagementService>();
 builder.Services.AddScoped(typeof(IMemberRepository<>), typeof(MemberRepository<>));
 
 
-// Identity configuration
 builder.Services.AddIdentity<AppUser, AppRole>(options =>
 {
     options.User.RequireUniqueEmail = false;
@@ -36,12 +33,8 @@ builder.Services.AddIdentity<AppUser, AppRole>(options =>
 .AddEntityFrameworkStores<AuthtakeDbContext>()
 .AddDefaultTokenProviders();
 
-// JWT Configuration
+
 var jwtKey = builder.Configuration["Jwt:Key"];
-if (string.IsNullOrEmpty(jwtKey) || jwtKey.Length < 32)
-{
-    throw new InvalidOperationException("JWT anahtarý yapýlandýrýlmamýþ veya yeterince uzun deðil (en az 32 karakter olmalý).");
-}
 
 var keyBytes = Encoding.UTF8.GetBytes(jwtKey);
 
@@ -52,7 +45,7 @@ builder.Services.AddAuthentication(options =>
 })
 .AddJwtBearer(options =>
 {
-    options.RequireHttpsMetadata = false; // Geliþtirme için false
+    options.RequireHttpsMetadata = false; 
     options.SaveToken = true;
     options.TokenValidationParameters = new TokenValidationParameters
     {
@@ -66,20 +59,6 @@ builder.Services.AddAuthentication(options =>
         ValidateIssuerSigningKey = true
     };
     
-    // Debug için event'ler ekleyelim
-    options.Events = new JwtBearerEvents
-    {
-        OnAuthenticationFailed = context =>
-        {
-            Console.WriteLine($"JWT Authentication failed: {context.Exception}");
-            return Task.CompletedTask;
-        },
-        OnTokenValidated = context =>
-        {
-            Console.WriteLine("JWT Token validated successfully");
-            return Task.CompletedTask;
-        }
-    };
 });
 
 builder.Services.AddAuthorization();
@@ -96,13 +75,11 @@ builder.Services.AddCors(options =>
     });
 });
 
-// Database context
 builder.Services.AddDbContext<AuthtakeDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline
 if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
@@ -112,7 +89,6 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
-// Middleware sýralamasý çok önemli!
 app.UseCors("SifreKasasiCors");
 app.UseAuthentication();
 app.UseAuthorization();
